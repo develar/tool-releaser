@@ -178,9 +178,9 @@ func hashFile(file string, checksums *bytes.Buffer) {
 	buf := make([]byte, base64.StdEncoding.EncodedLen(len(src)))
 	base64.StdEncoding.Encode(buf, src)
 	checksums.WriteString(filepath.Base(file))
-	checksums.WriteString(": ")
+	checksums.WriteString(": `")
 	checksums.Write(buf)
-	checksums.WriteString("\n")
+	checksums.WriteString("`\n")
 }
 
 func uploadFile(uploadURL, path string) {
@@ -209,20 +209,6 @@ func uploadFile(uploadURL, path string) {
 		log.Println(string(body[:]))
 	}
 }
-
-// CreateRelease creates a Github Release, attaching the given files as release assets
-// If a release already exist, up in Github, this function will attempt to attach the given files to it.
-//func CreateRelease(tag, branch, desc string, filePaths []string) {
-//	release := Release{
-//		TagName:    tag,
-//		Name:       tag,
-//		Prerelease: false,
-//		Draft:      false,
-//		Branch:     branch,
-//		Body:       desc,
-//	}
-//	publishRelease(release, filePaths)
-//}
 
 func publishRelease(release Release, filePaths []string) {
 	endpoint := fmt.Sprintf("%s/releases", githubAPIEndpoint)
