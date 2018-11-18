@@ -1,36 +1,36 @@
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, version 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
-
 package main
 
 import (
-	"bytes"
-	"encoding/json"
-	"flag"
-	"fmt"
-	"io"
-	"io/ioutil"
-	"log"
-	"net/http"
-	"net/http/httputil"
-	"os"
-	"path/filepath"
-	"strconv"
-	"strings"
-	"sync"
-	"crypto/sha512"
-	"encoding/base64"
+  "bytes"
+  "crypto/sha512"
+  "encoding/base64"
+  "encoding/json"
+  "flag"
+  "fmt"
+  "io"
+  "io/ioutil"
+  "log"
+  "net/http"
+  "net/http/httputil"
+  "os"
+  "path/filepath"
+  "strconv"
+  "strings"
+  "sync"
 )
 
 var (
-	githubToken       string
-	githubUser        string
-	githubRepo        string
-	githubAPIEndpoint string
-	// Version gets initialized in compilation time.
-	Version string
-	debug   bool
+  githubToken       string
+  githubUser        string
+  githubRepo        string
+  githubAPIEndpoint string
+
+  // Version gets initialized in compilation time.
+  Version string
+  isDebug bool
 )
 
 // Release represents a Github Release.
@@ -51,7 +51,7 @@ var prereleaseFlag bool
 func init() {
 	log.SetFlags(0)
 
-	debug, _ = strconv.ParseBool(os.Getenv("DEBUG"))
+	isDebug, _ = strconv.ParseBool(os.Getenv("DEBUG"))
 
 	githubToken = os.Getenv("GITHUB_TOKEN")
 	githubUser = os.Getenv("GITHUB_USER")
@@ -126,7 +126,7 @@ Please refer to https://help.github.com/articles/creating-an-access-token-for-co
 	githubRepo = userRepo[1]
 	githubAPIEndpoint = fmt.Sprintf("%s/repos/%s/%s", githubAPIEndpoint, githubUser, githubRepo)
 
-	if debug {
+	if isDebug {
 		log.Println("Glob pattern received: ")
 		log.Println(flag.Arg(4))
 	}
@@ -136,7 +136,7 @@ Please refer to https://help.github.com/articles/creating-an-access-token-for-co
 		log.Fatalf("Error: Invalid glob pattern: %s\n", flag.Arg(4))
 	}
 
-	if debug {
+	if isDebug {
 		log.Println("Expanded glob pattern: ")
 		log.Printf("%v\n", filePaths)
 	}
@@ -145,31 +145,34 @@ Please refer to https://help.github.com/articles/creating-an-access-token-for-co
 	branch := flag.Arg(2)
 	desc := flag.Arg(3)
 
-	var checksums bytes.Buffer
+	var checksums strings.Builder
+  checksums.WriteString(desc)
 	for _, file := range filePaths {
 		hashFile(file, &checksums)
 	}
 
-	release := Release{
-		TagName:    tag,
-		Name:       tag,
-		Prerelease: prereleaseFlag,
-		Draft:      false,
-		Branch:     branch,
-		Body:       desc + string(checksums.Bytes()),
-	}
+  release := Release{
+    TagName:    tag,
+    Name:       tag,
+    Prerelease: prereleaseFlag,
+    Draft:      false,
+    Branch:     branch,
+    Body:       checksums.String(),
+  }
 	publishRelease(release, filePaths)
 	log.Println("Done")
 }
 
-func hashFile(file string, checksums *bytes.Buffer) {
+func hashFile(file string, checksums *strings.Builder) {
 	f, err := os.Open(file)
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	defer f.Close()
+
 	h := sha512.New()
 	_, err = io.Copy(h, f)
-	f.Close()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -204,7 +207,7 @@ func uploadFile(uploadURL, path string) {
 		log.Printf("Error: %s\n", err.Error())
 	}
 
-	if debug {
+	if isDebug {
 		log.Println("========= UPLOAD RESPONSE ===========")
 		log.Println(string(body[:]))
 	}
@@ -273,7 +276,7 @@ func doRequest(method, url, contentType string, reqBody io.Reader, bodySize int6
 	req.Header.Set("Accept", "application/vnd.github.v3+json")
 	req.ContentLength = bodySize
 
-	if debug {
+	if isDebug {
 		log.Println("================ REQUEST DUMP ==================")
 		dump, err := httputil.DumpRequestOut(req, true)
 		if err != nil {
@@ -284,7 +287,7 @@ func doRequest(method, url, contentType string, reqBody io.Reader, bodySize int6
 
 	resp, err := http.DefaultClient.Do(req)
 
-	if debug {
+	if isDebug {
 		log.Println("================ RESPONSE DUMP ==================")
 		dump, err := httputil.DumpResponse(resp, true)
 		if err != nil {
