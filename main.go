@@ -4,36 +4,36 @@
 package main
 
 import (
-  "bytes"
-  "crypto/sha512"
-  "encoding/base64"
-  "encoding/json"
-  "flag"
-  "fmt"
-  "io"
-  "io/ioutil"
-  "log"
-  "net/http"
-  "net/http/httputil"
-  "os"
-  "path/filepath"
-  "strconv"
-  "strings"
-  "sync"
+	"bytes"
+	"crypto/sha512"
+	"encoding/base64"
+	"encoding/json"
+	"flag"
+	"fmt"
+	"io"
+	"io/ioutil"
+	"log"
+	"net/http"
+	"net/http/httputil"
+	"os"
+	"path/filepath"
+	"strconv"
+	"strings"
+	"sync"
 )
 
 var (
-  githubToken       string
-  githubUser        string
-  githubRepo        string
-  githubAPIEndpoint string
+	githubToken       string
+	githubUser        string
+	githubRepo        string
+	githubAPIEndpoint string
 
-  // Version gets initialized in compilation time.
-  Version string
-  isDebug bool
+	// Version gets initialized in compilation time.
+	Version string
+	isDebug bool
 )
 
-// Release represents a Github Release.
+// Release represents a GitHub Release.
 //noinspection SpellCheckingInspection
 type Release struct {
 	UploadURL  string `json:"upload_url,omitempty"`
@@ -146,19 +146,19 @@ Please refer to https://help.github.com/articles/creating-an-access-token-for-co
 	desc := flag.Arg(3)
 
 	var checksums strings.Builder
-  checksums.WriteString(desc)
+	checksums.WriteString(desc)
 	for _, file := range filePaths {
 		hashFile(file, &checksums)
 	}
 
-  release := Release{
-    TagName:    tag,
-    Name:       tag,
-    Prerelease: prereleaseFlag,
-    Draft:      false,
-    Branch:     branch,
-    Body:       checksums.String(),
-  }
+	release := Release{
+		TagName:    tag,
+		Name:       tag,
+		Prerelease: prereleaseFlag,
+		Draft:      false,
+		Branch:     branch,
+		Body:       checksums.String(),
+	}
 	publishRelease(release, filePaths)
 	log.Println("Done")
 }
